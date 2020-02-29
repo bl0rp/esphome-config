@@ -1,0 +1,83 @@
+substitutions:
+  devicename: esp32_2
+
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: lolin32
+
+
+wifi:
+  ssid: !secret ssid_iot
+  password: !secret password_iot
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.111
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_user
+  password: !secret mqtt_pasword
+  discovery: False
+  discovery_retain: False
+  birth_message:
+    topic: $devicename/status
+    payload: online
+  will_message:
+    topic: $devicename/status
+    payload: offline
+  on_message:
+    - topic: $devicename/ota_mode
+      payload: 'ON'
+      then:
+        - deep_sleep.prevent: deep_sleep_1
+        - mqtt.publish:
+            topic: $devicename/ota_mode_status
+            payload: "active"
+    - topic: $devicename/sleep_mode
+      payload: 'ON'
+      then:
+        - mqtt.publish:
+            topic: $devicename/ota_mode_status
+            payload: "disabled"
+        - deep_sleep.enter: deep_sleep_1
+
+logger:
+  level: WARN
+
+ota:
+  password: !secret ota_password
+
+i2c:
+  sda: 21
+  scl: 22
+
+
+
+sensor:
+#wifi signal
+  - platform: wifi_signal
+    name: "$devicename_rssi"
+#bme280
+  - platform: bme280
+    temperature:
+      name: "$devicename_temperature"
+    pressure:
+      name: "$devicename_pressure"
+    humidity:
+      name: "$devicename_humidity"
+    address: 0x76
+#battery
+  - platform: adc
+    pin: 34
+    attenuation: 11db
+    name: "$devicename_voltage"
+
+deep_sleep:
+  id: deep_sleep1
+  run_duration: 10s
+  sleep_duration: 60min

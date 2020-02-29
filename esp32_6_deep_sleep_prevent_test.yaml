@@ -1,0 +1,82 @@
+substitutions:
+  devicename: esp32_6
+
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: lolin32
+
+
+wifi:
+  ssid: !secret ssid_iot
+  password: !secret password_iot
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.115
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_user
+  password: !secret mqtt_pasword
+  discovery: False
+  discovery_retain: False
+  birth_message:
+    topic: $devicename/status
+    payload: online
+  will_message:
+    topic: $devicename/status
+    payload: offline
+  on_message:
+    - topic: $devicename/ota_mode
+      payload: 'ON'
+      then:
+        - deep_sleep.prevent: deep_sleep_1
+        - mqtt.publish:
+            topic: $devicename/ota_mode_status
+            payload: "active"
+    - topic: $devicename/sleep_mode
+      payload: 'ON'
+      then:
+        - mqtt.publish:
+            topic: $devicename/ota_mode_status
+            payload: "disabled"
+        - deep_sleep.enter: deep_sleep_1
+
+
+logger:
+  level: WARN
+
+ota:
+  password: !secret ota_password
+
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: ${devicename}_ip
+    ssid:
+      name: ${devicename}_ssid
+    bssid:
+      name: ${devicename}_bssid
+
+sensor:
+#wifi signal
+  - platform: wifi_signal
+    name: ${devicename}_rssi
+  - platform: uptime
+    name: ${devicename}_uptime
+    update_interval: 5s
+
+deep_sleep:
+  id: deep_sleep_1
+  run_duration: 30s
+  sleep_duration: 1min
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+  - platform: restart
+    name: "${devicename}_restart"

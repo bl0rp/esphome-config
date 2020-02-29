@@ -1,0 +1,12 @@
+working:
+
+  esp32 lolin32 pinout:
+
+    BUSY: 17
+    RST: 16
+    DC: 26
+    CS: 27
+    CLK: 15
+    DIN: 2
+    GND: x
+    VCC: x
