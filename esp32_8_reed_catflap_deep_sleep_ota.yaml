@@ -1,5 +1,5 @@
 substitutions:
-  devicename: esp32_2
+  devicename: esp32_8
 
 
 esphome:
@@ -9,14 +9,13 @@ esphome:
 
 
 wifi:
-  ssid: !secret ssid_iot
-  password: !secret password_iot
+  ssid: !secret ssid
+  password: !secret password
   fast_connect: true
   manual_ip:
-    static_ip: 192.168.0.111
+    static_ip: 192.168.0.117
     gateway: 192.168.0.1
     subnet: 255.255.255.0
-
 
 mqtt:
   broker: !secret mqtt_broker
@@ -46,43 +45,53 @@ mqtt:
             payload: "disabled"
         - deep_sleep.enter: deep_sleep_1
 
+
 logger:
   level: WARN
 
 ota:
   password: !secret ota_password
 
-i2c:
-  sda: 21
-  scl: 22
-
 text_sensor:
   - platform: wifi_info
     ip_address:
-      name: ${devicename}_ip
+      name: "${devicename}_ip"
   - platform: version
     name: "${devicename}_version"
+deep_sleep:
+  id: deep_sleep_1
+  run_duration: 30s
+  sleep_duration: 720min
+  wakeup_pin: 14
+  wakeup_pin_mode: INVERT_WAKEUP
+
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
+
+binary_sensor:
+  - platform: gpio
+    filters:
+      - invert:
+      - delayed_on_off: 200ms
+      - delayed_off: 1000ms
+    pin:
+      number: 14
+      mode: INPUT_PULLDOWN
+    name: "${devicename}_catflap"
+    device_class: door
+
+
 
 sensor:
 #wifi signal
   - platform: wifi_signal
-    name: "${devicename}_rssi"
-#bme280
-  - platform: bme280
-    temperature:
-      name: "${devicename}_temperature"
-    pressure:
-      name: "${devicename}_pressure"
-    humidity:
-      name: "${devicename}_humidity"
-    address: 0x76
-#battery
+    name: ${devicename}_rssi
   - platform: adc
     pin: 34
     attenuation: 11db
+    filters:
     name: "${devicename}_voltage"
-
-deep_sleep:
-  id: deep_sleep_1
-  run_duration: 10s
-  sleep_duration: 60min
