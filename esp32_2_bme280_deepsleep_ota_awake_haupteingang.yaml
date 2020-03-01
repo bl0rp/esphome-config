@@ -81,7 +81,12 @@ sensor:
     pin: 34
     attenuation: 11db
     name: "${devicename}_voltage"
-
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
 deep_sleep:
   id: deep_sleep_1
   run_duration: 10s
