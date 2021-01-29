@@ -4,6 +4,7 @@
 /.esphome/
 /.ssh/
 /fonts/
+/2remind/
 **/.pioenvs/
 **/.piolibdeps/
 **/lib/
