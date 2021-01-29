@@ -1,0 +1,57 @@
+substitutions:
+  devicename: esp32_7
+
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: lolin32
+
+
+wifi:
+  ssid: !secret ssid_iot
+  password: !secret password_iot
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.116
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+web_server:
+  port: 80
+api:
+
+logger:
+  level: WARN
+
+ota:
+  password: !secret ota_password
+
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${devicename}_ip"
+    ssid:
+      name: "${devicename}_ssid"
+  - platform: version
+    name: "${devicename}_version"
+
+
+sensor:
+#wifi signal
+  - platform: wifi_signal
+    name: "${devicename}_rssi"
+#uptime
+  - platform: uptime
+    name: "${devicename}_uptime"
+
+binary_sensor:
+  - platform: status
+    name: "${devicename}_status"
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
