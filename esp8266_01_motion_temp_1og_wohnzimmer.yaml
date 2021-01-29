@@ -1,0 +1,70 @@
+#pir D6, dht22 D5
+
+substitutions:
+  devicename: esp8266_01
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: nodemcuv2
+
+wifi:
+  ssid: !secret ssid
+  password: !secret password
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.80
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+api:
+
+logger:
+  level: WARN
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${devicename}_ip"
+    ssid:
+      name: "${devicename}_ssid"
+  - platform: version
+    name: "${devicename}_version"
+
+binary_sensor:
+  - platform: gpio
+    pin: D6
+    name: "${devicename}_motion"
+    device_class: motion
+  - platform: status
+    name: "${devicename}_status"
+
+sensor:
+#wifi signal
+  - platform: wifi_signal
+    name: "${devicename}_rssi"
+#uptime
+  - platform: uptime
+    name: "${devicename}_uptime"
+#dht22
+  - platform: dht
+    pin: D5
+    model: AM2302
+    temperature:
+      name: "${devicename}_temperature"
+    humidity:
+      name: "${devicename}_humidity"
+    update_interval: 15s
+
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
