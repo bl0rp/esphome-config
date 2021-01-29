@@ -69,6 +69,7 @@ sensor:
     name: "${devicename}_rssi"
 #bme280
   - platform: bme280
+    update_interval: 2s
     temperature:
       name: "${devicename}_temperature"
     pressure:
@@ -78,9 +79,20 @@ sensor:
     address: 0x76
 #battery
   - platform: adc
-    pin: 34
+    pin: 35
     attenuation: 11db
     name: "${devicename}_voltage"
+    id: esp32_2_vbatt
+    update_interval: 2s
+    filters:
+      - multiply: 1.76
+    on_value_range:
+      - below: 3.29
+        then:
+          - mqtt.publish:
+              topic: $devicename/low_voltage
+              payload: "true"
+
 switch:
   - platform: shutdown
     name: "${devicename}_shutdown"
