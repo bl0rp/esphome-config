@@ -76,7 +76,6 @@ binary_sensor:
   - platform: gpio
     filters:
       - invert:
-      - delayed_on_off: 200ms
       - delayed_off: 1000ms
     pin:
       number: 14
