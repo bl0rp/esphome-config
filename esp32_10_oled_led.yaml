@@ -1,0 +1,271 @@
+substitutions:
+  devicename: esp32_10
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: lolin_d32
+
+wifi:
+  ssid: !secret ssid
+  password: !secret password
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.119
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+    dns1: 1.1.1.1
+    dns2: 1.0.0.1
+
+captive_portal:
+logger:
+  level: WARN
+
+api:
+i2c:
+  sda: 21
+  scl: 22
+  id: bus_a
+ota:
+  password: !secret ota_password
+
+font:
+  - file: 'fonts/arial.ttf' #'slkscr.ttf'
+    id: font1
+    size: 12
+    glyphs: '!\/"%()+,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyzß'
+
+  - file: 'fonts/BebasNeue-Regular.ttf'
+    id: font2
+    size: 48
+
+  - file: 'fonts/arial.ttf'
+    id: font3
+    size: 18
+
+  - file: 'fonts/arial.ttf'
+    id: font4
+    size: 14
+
+  - file: 'fonts/arial.ttf'
+    id: font5
+    size: 48
+  - file: 'fonts/arial.ttf'
+    id: font6
+    size: 32
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    id: my_display
+    pages:
+      - id: page0
+        lambda: |-
+          if (id(radiator_temperature).has_state()) {
+            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Temp./Leistung WKS");
+            it.printf(0, 30, id(font3), TextAlign::BASELINE_LEFT, "%.1f °C", id(radiator_temperature).state);
+            it.printf(0, 60, id(font3), TextAlign::BASELINE_LEFT, "%.0f Watt", id(wks_load).state);
+          } else {
+          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
+          }
+      - id: page1
+        lambda: |-
+          if (id(radiator_temperature).has_state()) {
+            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Temperatur Radiator");
+            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.1f  °C", id(radiator_temperature).state);
+          } else {
+          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
+          }
+
+      - id: page2
+        lambda: |-
+          if (id(wks_load).has_state()) {
+            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Leistung WKS");
+            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.0f Watt", id(wks_load).state);
+          } else {
+          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
+          }
+
+      - id: page3
+        lambda: |-
+          if (id(wks_load).has_state()) {
+            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "CO2");
+            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.0f ppm", id(elw_co2).state);
+          } else {
+          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
+          }
+interval:
+  - interval: 5s
+    then:
+      - display.page.show_next: my_display
+      - component.update: my_display
+
+light:
+  - platform: rgb
+    name: "${devicename}_led"
+    red: pwm_led1_red_pin_2
+    green: pwm_led1_green_pin_15
+    blue: pwm_led1_blue_pin_0
+    effects:
+      - pulse:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+      - pulse:
+          name: "Slow Pulse"
+          update_interval: 2s
+      - random:
+      - strobe:
+      - strobe:
+          name: Strobe Effect With Custom Values
+          colors:
+            - state: True
+              brightness: 100%
+              red: 100%
+              green: 90%
+              blue: 0%
+              duration: 500ms
+            - state: False
+              duration: 250ms
+            - state: True
+              brightness: 100%
+              red: 0%
+              green: 100%
+              blue: 0%
+              duration: 500ms
+      - flicker:
+      - flicker:
+         name: Flicker Effect With Custom Values
+         alpha: 95%
+         intensity: 1.5%
+  - platform: rgb
+    name: "${devicename}_led2"
+    red: pwm_led2_red_pin_4
+    green: pwm_led2_green_pin_16
+    blue: pwm_led2_blue_pin_17
+
+output:
+  - platform: ledc
+    id: pwm_led1_red_pin_2
+    pin: 2
+  - platform: ledc
+    id: pwm_led1_green_pin_15
+    pin: 15
+  - platform: ledc
+    id: pwm_led1_blue_pin_0
+    pin: 0
+  - platform: ledc
+    id: pwm_led2_red_pin_4
+    pin: 4
+  - platform: ledc
+    id: pwm_led2_green_pin_16
+    pin: 16
+  - platform: ledc
+    id: pwm_led2_blue_pin_17
+    pin: 17
+
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${devicename}_ip"
+  - platform: version
+    name: "${devicename}_version"
+  - platform: template
+    name: ${devicename}_uptime_human
+    id: uptime_human
+    icon: mdi:clock-start
+
+web_server:
+  port: 80
+
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
+
+binary_sensor:
+  - platform: status
+    name: "${devicename}_status"
+sensor:
+
+#import from HomeAssistant
+  - platform: homeassistant
+    id: carport_temperature
+    entity_id: sensor.esp32_03_temperature
+    internal: true
+
+  - platform: homeassistant
+    id: haupteingang_temperature
+    entity_id: sensor.esp32_02_temperature
+    internal: true
+
+  - platform: homeassistant
+    id: radiator_temperature
+    entity_id: sensor.esp32_07_temp
+    internal: true
+
+  - platform: homeassistant
+    id: wks_load
+    entity_id: sensor.sonoff02_momentane_leistung
+    internal: true
+
+  - platform: homeassistant
+    id: elw_co2
+    entity_id: sensor.esp32_6_scd_co2
+    internal: true
+
+  - platform: wifi_signal
+    name: ${devicename}_rssi
+    id: rssi_sensor
+  - platform: uptime
+    name: ${devicename}_uptime
+    id: uptimesensor
+    update_interval: 10s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptimesensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? String(days) + "d " : "") +
+                (hours ? String(hours) + "h " : "") +
+                (minutes ? String(minutes) + "m " : "") +
+                (String(seconds) + "s")
+              ).c_str();
+  - platform: template
+    name: "${devicename}_wifi_quality"
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: "mdi:wifi"
+    update_interval: 10s
+
+    lambda: |-
+      // Taken from  https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
+      int quality;
+      const int rssi = id(rssi_sensor).state;
+
+      if (rssi <= -100)
+      {
+          quality = 0;
+      }
+      else if (rssi >= -50)
+      {
+          quality = 100;
+      }
+      else
+      {
+          quality = 2 * (rssi + 100);
+      }
+      return quality;
