@@ -1,0 +1,127 @@
+substitutions:
+  devicename: esp32_06
+
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: lolin32
+
+
+wifi:
+  ssid: !secret ssid
+  password: !secret password
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.0.115
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+    dns1: 1.1.1.1
+    dns2: 1.0.0.1
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: True
+  id: bus_a
+
+api:
+
+logger:
+  level: WARN
+
+
+ota:
+  password: !secret ota_password
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${devicename}_ip"
+  - platform: version
+    name: "${devicename}_version"
+  - platform: template
+    name: ${devicename}_uptime_human
+    id: uptime_human
+    icon: mdi:clock-start
+
+web_server:
+  port: 80
+
+switch:
+  - platform: shutdown
+    name: "${devicename}_shutdown"
+    id: shutdown1
+  - platform: restart
+    name: "${devicename}_restart"
+
+binary_sensor:
+  - platform: status
+    name: "${devicename}_status"
+
+sensor:
+  - platform: scd30
+    co2:
+      name: "${devicename}_co2"
+      accuracy_decimals: 1
+    temperature:
+      name: "${devicename}_temperature_scd"
+      accuracy_decimals: 1
+    humidity:
+      name: "${devicename}_humidity_scd"
+      accuracy_decimals: 1
+
+    address: 0x61
+    update_interval: 30s
+
+
+  - platform: wifi_signal
+    name: "${devicename}_rssi"
+    id: rssi_sensor
+  - platform: template
+    name: "${devicename}_wifi_quality"
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: "mdi:wifi"
+    update_interval: 10s
+    id: wifi_quality
+    lambda: |-
+      // Taken from  https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
+      int quality;
+      const int rssi = id(rssi_sensor).state;
+
+      if (rssi <= -100)
+      {
+          quality = 0;
+      }
+      else if (rssi >= -50)
+      {
+          quality = 100;
+      }
+      else
+      {
+          quality = 2 * (rssi + 100);
+      }
+      return quality;
+  - platform: uptime
+    name: ${devicename}_uptime
+    id: uptimesensor
+    update_interval: 10s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptimesensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? String(days) + "d " : "") +
+                (hours ? String(hours) + "h " : "") +
+                (minutes ? String(minutes) + "m " : "") +
+                (String(seconds) + "s")
+              ).c_str();
