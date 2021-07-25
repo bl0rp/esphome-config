@@ -42,6 +42,9 @@ font:
   - file: 'fonts/arial.ttf'
     id: font3
     size: 18
+  - file: 'fonts/arial.ttf'
+    id: arial16
+    size: 16
 
   - file: 'fonts/arial.ttf'
     id: font4
@@ -63,43 +66,12 @@ display:
       - id: page0
         lambda: |-
           if (id(radiator_temperature).has_state()) {
-            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Temp./Leistung WKS");
-            it.printf(0, 30, id(font3), TextAlign::BASELINE_LEFT, "%.1f °C", id(radiator_temperature).state);
-            it.printf(0, 60, id(font3), TextAlign::BASELINE_LEFT, "%.0f Watt", id(wks_load).state);
+            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Temp. / Watt / ppm");
+            it.printf(0, 30, id(font3), TextAlign::BASELINE_LEFT, "%.0f W / %.1f°C", id(wks_load).state, id(radiator_temperature).state);
+            it.printf(0, 60, id(font3), TextAlign::BASELINE_LEFT, "%.0f ppm", id(elw_co2).state);
           } else {
           it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
           }
-      - id: page1
-        lambda: |-
-          if (id(radiator_temperature).has_state()) {
-            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Temperatur Radiator");
-            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.1f  °C", id(radiator_temperature).state);
-          } else {
-          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
-          }
-
-      - id: page2
-        lambda: |-
-          if (id(wks_load).has_state()) {
-            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "Leistung WKS");
-            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.0f Watt", id(wks_load).state);
-          } else {
-          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
-          }
-
-      - id: page3
-        lambda: |-
-          if (id(wks_load).has_state()) {
-            it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "CO2");
-            it.printf(0, 60, id(font6), TextAlign::BASELINE_LEFT, "%.0f ppm", id(elw_co2).state);
-          } else {
-          it.printf(0, 0, id(font1), TextAlign::TOP_LEFT, "Warte auf Daten....");
-          }
-interval:
-  - interval: 5s
-    then:
-      - display.page.show_next: my_display
-      - component.update: my_display
 
 light:
   - platform: rgb
@@ -216,7 +188,7 @@ sensor:
 
   - platform: homeassistant
     id: elw_co2
-    entity_id: sensor.esp32_6_scd_co2
+    entity_id: sensor.esp32_06_co2
     internal: true
 
   - platform: wifi_signal
@@ -250,7 +222,7 @@ sensor:
     accuracy_decimals: 0
     icon: "mdi:wifi"
     update_interval: 10s
-
+    id: wifi_quality
     lambda: |-
       // Taken from  https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
       int quality;
